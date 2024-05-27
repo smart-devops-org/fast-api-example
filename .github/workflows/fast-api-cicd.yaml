@@ -40,8 +40,8 @@ jobs:
         with:
           aws-region: ap-northeast-2
           registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
