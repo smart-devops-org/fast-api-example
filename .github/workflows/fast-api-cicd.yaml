@@ -1,0 +1,62 @@
+name: FastAPI CI / CD
+
+# master 브랜치에 push 되면 workflow 작동
+on:
+  push:
+    branches:
+      - "master"
+
+# 수동으로 workflow 실행 실행시킬때
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       logLevel:
+#         description: 'Log level'
+#         required: true
+#         default: 'warning'
+
+# workflow 내에서 사용할 변수 값 저장
+env:
+  REGISTRY: ${{ secrets.AWS_ECR_REGISTRY }}
+  IMAGE_NAME: "fast-api-example"
+
+# permissions:
+#   contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest # 어떤 os 에서 실행시킬지
+    environment: production
+
+    steps:
+      # Github에 저장된 코드를 CI 서버로 내려받아 뒷 step에서 사용할 수 있도록 하는 과정
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Github Secret과 local env 에 저장된 값 불러오기
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+      - name: Build and push Docker image
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+        # 내부적 로직은 아래와 같음
+        # docker build -t cicd-front .
+        # docker tag cicd-front:latest 123412341234.dkr.ecr.ap-northeast-2.amazonaws.com/cicd-front:latest
+        # docker push 123412341234.dkr.ecr.ap-northeast-2.amazonaws.com/cicd-front:latest
